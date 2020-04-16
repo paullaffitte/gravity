@@ -1,0 +1,128 @@
+<html>
+  <head>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        background-color: black;
+      }
+      canvas {
+        display: block;
+      }
+      div#informations {
+        width: 100%;
+        position: absolute;
+        color: white;
+      }
+    </style>
+  </head>
+  <body onload="init()">
+    <canvas id="gravity"></canvas>
+    <script>
+      function init() {
+        const canvas = document.getElementById("gravity");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const stage = new createjs.Stage("gravity");
+        
+        createjs.Ticker.on("tick", e => update(e, stage));
+        createjs.Ticker.framerate = 60;
+
+        handleCreateObject(stage);
+      }
+
+      const sub = (a, b) => a - b;
+      const add = (a, b) => a + b;
+      const multiply = (a, b) => a * b;
+      const divide = (a, b) => a / b;
+
+      const asVector = (x, y) => ({ x, y, norm: () => Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) });
+      const toVector = (src, dest, op=sub) => asVector(op(dest.x, src.x), op(dest.y, src.y));
+      const onVector = (vec, op) => asVector(op(vec.x), op(vec.y));
+
+      function handleCreateObject(stage) {
+        let position = null;
+        let force = null;
+
+        stage.on("stagemousedown", function(evt) {
+          position = { x: evt.stageX, y: evt.stageY };
+        });
+
+        stage.on("stagemouseup", function(evt) {
+          force = toVector(position, { x: evt.stageX, y: evt.stageY });
+          addObject(stage, 1, position, force);
+          position = null;
+          force = null;
+        });
+      }
+
+      const massBase = 100;
+      function addObject(stage, radius, position, force) {
+        const circle = new createjs.Shape();
+        
+        circle.graphics
+          .beginFill("White")
+          .drawCircle(0, 0, radius);
+
+        circle.x = position.x;
+        circle.y = position.y;
+        circle.radius = radius;
+        circle.mass = Math.PI * Math.pow(radius, 2) * massBase;
+        circle.force = onVector(force, v => v * circle.mass);
+
+        stage.addChild(circle);
+      }
+
+      function updateSpeed(a, b) {
+        const gravitationalConstant = 1;
+
+        const distVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));
+        const distance = distVector.norm();
+
+        const gForce = gravitationalConstant * a.mass * b.mass / Math.pow(distance, 2);
+
+        const direction = onVector(distVector, v => v / distance);
+        const force = onVector(direction, v => v * gForce)
+        a.force = toVector(a.force, force, add);
+        b.force = toVector(b.force, onVector(force, v => -v), add);
+      }
+
+      function hasCollision(a, b) {
+        const distance = toVector(asVector(a.x, a.y), asVector(b.x, b.y)).norm();
+        return distance - (a.radius + b.radius) <= 0;
+      }
+
+      function mergeObjects(a, b) {
+        b.toDelete = true;
+        a.force = toVector(a.force, b.force, add);
+        a.x = (a.x * a.mass + b.x * b.mass) / (a.mass + b.mass);
+        a.y = (a.y * a.mass + b.y * b.mass) / (a.mass + b.mass);
+        a.mass += b.mass;
+        a.radius = Math.sqrt(a.mass / Math.PI / massBase);
+        a.graphics.command.radius = a.radius;
+      }
+
+      function update(event, stage) {
+        const delta = event.delta / 1000;
+        stage.children.forEach((a, i) => {
+          if (a.toDelete)
+            return;
+          a.x += delta * a.force.x / a.mass;
+          a.y += delta * a.force.y / a.mass;
+          stage.children.forEach((b, j) => {
+            if (i <= j || b.toDelete)
+              return;
+            updateSpeed(a, b);
+            if (hasCollision(a, b)) {
+              mergeObjects(a, b)
+            }
+          });
+        });
+
+        stage.children = stage.children.filter(child => !child.toDelete);
+        stage.update(event);
+      }
+    </script>
+  </body>
+</html>
