@@ -19,17 +19,82 @@
   <body onload="init()">
     <canvas id="gravity"></canvas>
     <script>
+      class KeyboardControls {
+        constructor(controls) {
+          this.controls = controls;
+          this.keyboardEvents = {};
+          this.activeControls = {};
+
+          document.addEventListener('keydown', e => {
+            const { handler, onPress, control } = this.keyboardEvents[e.code] || {};
+
+            if (!handler)
+              return;
+
+            if (onPress) {
+              handler();
+            } else {
+              this.activeControls[control] = handler;
+            }
+          });
+
+          document.addEventListener('keyup', e => {
+            const { handler, onPress, control } = this.keyboardEvents[e.code] || {};
+
+            if (handler && !onPress) {
+              delete this.activeControls[control];
+            }
+          });
+        }
+
+        set mapping(mapping) {
+          this.keyboardEvents = mapping
+            .reduce((acc, { control, keys, onPress }) => {
+              keys.forEach(key => acc[key] = {
+                handler: this.controls[control],
+                control,
+                onPress
+              });
+              return acc;
+            }, {});
+        }
+
+        update() {
+          Object.values(this.activeControls)
+            .forEach(control => control());
+        }
+      }
+
       function init() {
         const canvas = document.getElementById("gravity");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
         const stage = new createjs.Stage("gravity");
-        
-        createjs.Ticker.on("tick", e => update(e, stage));
-        createjs.Ticker.framerate = 60;
+
+        const keyboardControls = new KeyboardControls({
+          left: () => console.log('left'),
+          right: () => console.log('right'),
+          up: () => console.log('up'),
+          down: () => console.log('down'),
+          repeat: () => console.log('repeat'),
+        });
+        keyboardControls.mapping = [
+          { control: 'left', keys: [ 'ArrowLeft', 'KeyA' ] },
+          { control: 'right', keys: [ 'ArrowRight', 'KeyD' ] },
+          { control: 'up', keys: [ 'ArrowUp', 'KeyW' ] },
+          { control: 'down', keys: [ 'ArrowDown', 'KeyS' ] },
+          { control: 'repeat', keys: [ 'KeyR' ], onPress: true },
+        ];
 
         handleCreateObject(stage);
+
+        createjs.Ticker.on("tick", e => {
+          update(e, stage);
+          keyboardControls.update();
+        });
+        createjs.Ticker.framerate = 60;
+        window.simulationSpeed = 1;
       }
 
       const sub = (a, b) => a - b;
@@ -57,10 +122,10 @@
         });
       }
 
-      const massBase = 100;
+      const massBase = 50;
       function addObject(stage, radius, position, force) {
         const circle = new createjs.Shape();
-        
+
         circle.graphics
           .beginFill("White")
           .drawCircle(0, 0, radius);
@@ -104,7 +169,7 @@
       }
 
       function update(event, stage) {
-        const delta = event.delta / 1000;
+        const delta = event.delta / 1000 * window.simulationSpeed;
         stage.children.forEach((a, i) => {
           if (a.toDelete)
             return;
