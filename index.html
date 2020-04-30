@@ -72,6 +72,8 @@
       let lastObject = {};
       const setLastObject = (radius, force) => lastObject = { radius, force };
 
+      let followTarget;
+
       function init() {
         const canvas = document.getElementById("gravity");
         canvas.width = window.innerWidth;
@@ -93,7 +95,25 @@
           zoomin: delta => stage.scale *= zoom(delta),
           zoomout: delta => stage.scale *= 1 / zoom(delta),
           repeat: () => addObject(stage, lastObject.radius, stage.globalToLocal(stage.mouseX, stage.mouseY), lastObject.force),
-          // follow: () =>
+          follow: () => {
+            const { x, y } = stage.globalToLocal(stage.mouseX, stage.mouseY);
+            const closer = {};
+
+            if (stage.children.length == 0)
+              return;
+
+            stage.children.forEach(child => {
+              const distance = asVector(x - child.x, y - child.y).norm();
+
+              if (!closer.child || distance < closer.distance) {
+                closer.child = child;
+                closer.distance = distance;
+              }
+            });
+
+            followTarget = closer.child;
+          },
+          unfollow: () => followTarget = null,
         });
         keyboardControls.mapping = [
           { control: 'left', keys: [ 'ArrowLeft', 'A' ] },
@@ -104,6 +124,7 @@
           { control: 'zoomout', keys: [ 'ArrowDown', 'Q' ] },
           { control: 'repeat', keys: [ 'R' ], onPress: true },
           { control: 'follow', keys: [ 'F' ], onPress: true },
+          { control: 'unfollow', keys: [ 'U' ], onPress: true },
         ];
 
         handleCreateObject(stage);
@@ -196,6 +217,9 @@
         a.mass += b.mass;
         a.radius = Math.sqrt(a.mass / Math.PI / massBase);
         a.graphics.command.radius = a.radius;
+
+        if (followTarget && b.id == followTarget.id)
+          followTarget = a;
       }
 
       function update(event, stage, delta) {
@@ -215,6 +239,13 @@
         });
 
         stage.children = stage.children.filter(child => !child.toDelete);
+
+        if (followTarget) {
+          stage.regX = followTarget.x;
+          stage.regY = followTarget.y;
+        }
+        // console.log(stage.x, stage.y)
+
         stage.update(event);
       }
     </script>
