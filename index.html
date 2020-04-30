@@ -26,7 +26,7 @@
           this.activeControls = {};
 
           document.addEventListener('keydown', e => {
-            const { handler, onPress, control } = this.keyboardEvents[e.code] || {};
+            const { handler, onPress, control } = this.getKeyboardEvent(e.key);
 
             if (!handler)
               return;
@@ -39,7 +39,7 @@
           });
 
           document.addEventListener('keyup', e => {
-            const { handler, onPress, control } = this.keyboardEvents[e.code] || {};
+            const { handler, onPress, control } = this.getKeyboardEvent(e.key);
 
             if (handler && !onPress) {
               delete this.activeControls[control];
@@ -50,7 +50,7 @@
         set mapping(mapping) {
           this.keyboardEvents = mapping
             .reduce((acc, { control, keys, onPress }) => {
-              keys.forEach(key => acc[key] = {
+              keys.forEach(key => acc[key.toLowerCase()] = {
                 handler: this.controls[control],
                 control,
                 onPress
@@ -59,11 +59,18 @@
             }, {});
         }
 
-        update() {
+        update(delta) {
           Object.values(this.activeControls)
-            .forEach(control => control());
+            .forEach(control => control(delta));
+        }
+
+        getKeyboardEvent(key) {
+          return this.keyboardEvents[key.toLowerCase()] || {};
         }
       }
+
+      let lastObject = {};
+      const setLastObject = (radius, force) => lastObject = { radius, force };
 
       function init() {
         const canvas = document.getElementById("gravity");
@@ -71,30 +78,47 @@
         canvas.height = window.innerHeight;
 
         const stage = new createjs.Stage("gravity");
+        stage.regX = window.innerWidth / 2;
+        stage.regY = window.innerHeight / 2;
+        stage.x = stage.regX;
+        stage.y = stage.regY;
 
+        const speed = delta => 300 * delta / stage.scale;
+        const zoom = delta => 1 + 1 * delta;
         const keyboardControls = new KeyboardControls({
-          left: () => console.log('left'),
-          right: () => console.log('right'),
-          up: () => console.log('up'),
-          down: () => console.log('down'),
-          repeat: () => console.log('repeat'),
+          left: delta => stage.regX -= speed(delta),
+          right: delta => stage.regX += speed(delta),
+          up: delta => stage.regY -= speed(delta),
+          down: delta => stage.regY += speed(delta),
+          zoomin: delta => stage.scale *= zoom(delta),
+          zoomout: delta => stage.scale *= 1 / zoom(delta),
+          repeat: () => addObject(stage, lastObject.radius, stage.globalToLocal(stage.mouseX, stage.mouseY), lastObject.force),
+          // follow: () =>
         });
         keyboardControls.mapping = [
-          { control: 'left', keys: [ 'ArrowLeft', 'KeyA' ] },
-          { control: 'right', keys: [ 'ArrowRight', 'KeyD' ] },
-          { control: 'up', keys: [ 'ArrowUp', 'KeyW' ] },
-          { control: 'down', keys: [ 'ArrowDown', 'KeyS' ] },
-          { control: 'repeat', keys: [ 'KeyR' ], onPress: true },
+          { control: 'left', keys: [ 'ArrowLeft', 'A' ] },
+          { control: 'right', keys: [ 'ArrowRight', 'D' ] },
+          { control: 'up', keys: [ 'ArrowUp', 'W' ] },
+          { control: 'down', keys: [ 'ArrowDown', 'S' ] },
+          { control: 'zoomin', keys: [ 'ArrowDown', 'E' ] },
+          { control: 'zoomout', keys: [ 'ArrowDown', 'Q' ] },
+          { control: 'repeat', keys: [ 'R' ], onPress: true },
+          { control: 'follow', keys: [ 'F' ], onPress: true },
         ];
 
         handleCreateObject(stage);
 
         createjs.Ticker.on("tick", e => {
-          update(e, stage);
-          keyboardControls.update();
+          const delta = e.delta / 1000 * window.simulationSpeed
+          update(e, stage, delta);
+          keyboardControls.update(delta);
         });
         createjs.Ticker.framerate = 60;
         window.simulationSpeed = 1;
+
+        for (let i = 0; i < 50; i++) {
+          addObject(stage, Math.random(), asVector(Math.random() * window.innerWidth, Math.random() * window.innerHeight), asVector(0, 0));
+        }
       }
 
       const sub = (a, b) => a - b;
@@ -115,8 +139,9 @@
         });
 
         stage.on("stagemouseup", function(evt) {
-          force = toVector(position, { x: evt.stageX, y: evt.stageY });
-          addObject(stage, 1, position, force);
+          force = onVector(toVector(position, { x: evt.stageX, y: evt.stageY }), v => v / stage.scale);
+          const realPosition = stage.globalToLocal(position.x, position.y);
+          addObject(stage, 1, realPosition, force);
           position = null;
           force = null;
         });
@@ -125,6 +150,8 @@
       const massBase = 50;
       function addObject(stage, radius, position, force) {
         const circle = new createjs.Shape();
+
+        setLastObject(radius, force);
 
         circle.graphics
           .beginFill("White")
@@ -144,6 +171,9 @@
 
         const distVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));
         const distance = distVector.norm();
+
+        if (distance == 0)
+          return;
 
         const gForce = gravitationalConstant * a.mass * b.mass / Math.pow(distance, 2);
 
@@ -168,8 +198,7 @@
         a.graphics.command.radius = a.radius;
       }
 
-      function update(event, stage) {
-        const delta = event.delta / 1000 * window.simulationSpeed;
+      function update(event, stage, delta) {
         stage.children.forEach((a, i) => {
           if (a.toDelete)
             return;
