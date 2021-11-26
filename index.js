@@ -71,8 +71,8 @@ function init() {
     right: delta => stage.regX += speed(delta),
     up: delta => stage.regY -= speed(delta),
     down: delta => stage.regY += speed(delta),
-    zoomin: delta => stage.scale *= zoom(delta),
-    zoomout: delta => stage.scale *= 1 / zoom(delta),
+    zoomIn: delta => stage.scale *= zoom(delta),
+    zoomOut: delta => stage.scale *= 1 / zoom(delta),
     repeat: () => addObject(stage, lastObject.radius, stage.globalToLocal(stage.mouseX, stage.mouseY), lastObject.force),
     follow: () => {
       const { x, y } = stage.globalToLocal(stage.mouseX, stage.mouseY);
@@ -99,14 +99,18 @@ function init() {
     { control: 'right', keys: [ 'ArrowRight', 'D' ] },
     { control: 'up', keys: [ 'ArrowUp', 'W' ] },
     { control: 'down', keys: [ 'ArrowDown', 'S' ] },
-    { control: 'zoomin', keys: [ 'ArrowDown', 'E' ] },
-    { control: 'zoomout', keys: [ 'ArrowDown', 'Q' ] },
+    { control: 'zoomIn', keys: [ 'ArrowDown', 'E' ] },
+    { control: 'zoomOut', keys: [ 'ArrowDown', 'Q' ] },
     { control: 'repeat', keys: [ 'R' ], onPress: true },
     { control: 'follow', keys: [ 'F' ], onPress: true },
     { control: 'unfollow', keys: [ 'U' ], onPress: true },
   ];
 
   handleCreateObject(stage);
+
+  document.addEventListener('wheel', e => {
+    keyboardControls.controls.zoomIn(e.deltaY / 1000);
+  });
 
   createjs.Ticker.on("tick", e => {
     const delta = e.delta / 1000 * window.simulationSpeed

@@ -14,7 +14,7 @@ To **create an object**, click on the canvas. To give it an **initial velocity**
 Description                 | Key
 ----------------------------|-------------------
 Move the camera             | `W` `A` `S` `D`
-Zoom in and out             | `E` `Q`
+Zoom in and out             | `E` `Q` `<SCROLL>`
 Repeat last action          | `R`
 Follow the closest object   | `F`
 Unfollow object             | `U`
