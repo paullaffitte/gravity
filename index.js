@@ -1,0 +1,228 @@
+class KeyboardControls {
+  constructor(controls) {
+    this.controls = controls;
+    this.keyboardEvents = {};
+    this.activeControls = {};
+
+    document.addEventListener('keydown', e => {
+      const { handler, onPress, control } = this.getKeyboardEvent(e.key);
+
+      if (!handler)
+        return;
+
+      if (onPress) {
+        handler();
+      } else {
+        this.activeControls[control] = handler;
+      }
+    });
+
+    document.addEventListener('keyup', e => {
+      const { handler, onPress, control } = this.getKeyboardEvent(e.key);
+
+      if (handler && !onPress) {
+        delete this.activeControls[control];
+      }
+    });
+  }
+
+  set mapping(mapping) {
+    this.keyboardEvents = mapping
+      .reduce((acc, { control, keys, onPress }) => {
+        keys.forEach(key => acc[key.toLowerCase()] = {
+          handler: this.controls[control],
+          control,
+          onPress
+        });
+        return acc;
+      }, {});
+  }
+
+  update(delta) {
+    Object.values(this.activeControls)
+      .forEach(control => control(delta));
+  }
+
+  getKeyboardEvent(key) {
+    return this.keyboardEvents[key.toLowerCase()] || {};
+  }
+}
+
+let lastObject = {};
+const setLastObject = (radius, force) => lastObject = { radius, force };
+
+let followTarget;
+
+function init() {
+  const canvas = document.getElementById("gravity");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const stage = new createjs.Stage("gravity");
+  stage.regX = window.innerWidth / 2;
+  stage.regY = window.innerHeight / 2;
+  stage.x = stage.regX;
+  stage.y = stage.regY;
+
+  const speed = delta => 300 * delta / stage.scale;
+  const zoom = delta => 1 + 1 * delta;
+  const keyboardControls = new KeyboardControls({
+    left: delta => stage.regX -= speed(delta),
+    right: delta => stage.regX += speed(delta),
+    up: delta => stage.regY -= speed(delta),
+    down: delta => stage.regY += speed(delta),
+    zoomin: delta => stage.scale *= zoom(delta),
+    zoomout: delta => stage.scale *= 1 / zoom(delta),
+    repeat: () => addObject(stage, lastObject.radius, stage.globalToLocal(stage.mouseX, stage.mouseY), lastObject.force),
+    follow: () => {
+      const { x, y } = stage.globalToLocal(stage.mouseX, stage.mouseY);
+      const closer = {};
+
+      if (stage.children.length == 0)
+        return;
+
+      stage.children.forEach(child => {
+        const distance = asVector(x - child.x, y - child.y).norm();
+
+        if (!closer.child || distance < closer.distance) {
+          closer.child = child;
+          closer.distance = distance;
+        }
+      });
+
+      followTarget = closer.child;
+    },
+    unfollow: () => followTarget = null,
+  });
+  keyboardControls.mapping = [
+    { control: 'left', keys: [ 'ArrowLeft', 'A' ] },
+    { control: 'right', keys: [ 'ArrowRight', 'D' ] },
+    { control: 'up', keys: [ 'ArrowUp', 'W' ] },
+    { control: 'down', keys: [ 'ArrowDown', 'S' ] },
+    { control: 'zoomin', keys: [ 'ArrowDown', 'E' ] },
+    { control: 'zoomout', keys: [ 'ArrowDown', 'Q' ] },
+    { control: 'repeat', keys: [ 'R' ], onPress: true },
+    { control: 'follow', keys: [ 'F' ], onPress: true },
+    { control: 'unfollow', keys: [ 'U' ], onPress: true },
+  ];
+
+  handleCreateObject(stage);
+
+  createjs.Ticker.on("tick", e => {
+    const delta = e.delta / 1000 * window.simulationSpeed
+    update(e, stage, delta);
+    keyboardControls.update(delta);
+  });
+  createjs.Ticker.framerate = 60;
+  window.simulationSpeed = 1;
+
+  for (let i = 0; i < 50; i++) {
+    addObject(stage, Math.random(), asVector(Math.random() * window.innerWidth, Math.random() * window.innerHeight), asVector(0, 0));
+  }
+}
+
+const sub = (a, b) => a - b;
+const add = (a, b) => a + b;
+const multiply = (a, b) => a * b;
+const divide = (a, b) => a / b;
+
+const asVector = (x, y) => ({ x, y, norm: () => Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) });
+const toVector = (src, dest, op=sub) => asVector(op(dest.x, src.x), op(dest.y, src.y));
+const onVector = (vec, op) => asVector(op(vec.x), op(vec.y));
+
+function handleCreateObject(stage) {
+  let position = null;
+  let force = null;
+
+  stage.on("stagemousedown", function(evt) {
+    position = { x: evt.stageX, y: evt.stageY };
+  });
+
+  stage.on("stagemouseup", function(evt) {
+    force = onVector(toVector(position, { x: evt.stageX, y: evt.stageY }), v => v / stage.scale);
+    const realPosition = stage.globalToLocal(position.x, position.y);
+    addObject(stage, 1, realPosition, force);
+    position = null;
+    force = null;
+  });
+}
+
+const massBase = 50;
+function addObject(stage, radius, position, force) {
+  const circle = new createjs.Shape();
+
+  setLastObject(radius, force);
+
+  circle.graphics
+    .beginFill("White")
+    .drawCircle(0, 0, radius);
+
+  circle.x = position.x;
+  circle.y = position.y;
+  circle.radius = radius;
+  circle.mass = Math.PI * Math.pow(radius, 2) * massBase;
+  circle.force = onVector(force, v => v * circle.mass);
+
+  stage.addChild(circle);
+}
+
+function updateSpeed(a, b) {
+  const gravitationalConstant = 1;
+
+  const distVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));
+  const distance = distVector.norm();
+
+  if (distance == 0)
+    return;
+
+  const gForce = gravitationalConstant * a.mass * b.mass / Math.pow(distance, 2);
+
+  const direction = onVector(distVector, v => v / distance);
+  const force = onVector(direction, v => v * gForce)
+  a.force = toVector(a.force, force, add);
+  b.force = toVector(b.force, onVector(force, v => -v), add);
+}
+
+function hasCollision(a, b) {
+  const distance = toVector(asVector(a.x, a.y), asVector(b.x, b.y)).norm();
+  return distance - (a.radius + b.radius) <= 0;
+}
+
+function mergeObjects(a, b) {
+  b.toDelete = true;
+  a.force = toVector(a.force, b.force, add);
+  a.x = (a.x * a.mass + b.x * b.mass) / (a.mass + b.mass);
+  a.y = (a.y * a.mass + b.y * b.mass) / (a.mass + b.mass);
+  a.mass += b.mass;
+  a.radius = Math.sqrt(a.mass / Math.PI / massBase);
+  a.graphics.command.radius = a.radius;
+
+  if (followTarget && b.id == followTarget.id)
+    followTarget = a;
+}
+
+function update(event, stage, delta) {
+  stage.children.forEach((a, i) => {
+    if (a.toDelete)
+      return;
+    a.x += delta * a.force.x / a.mass;
+    a.y += delta * a.force.y / a.mass;
+    stage.children.forEach((b, j) => {
+      if (i <= j || b.toDelete)
+        return;
+      updateSpeed(a, b);
+      if (hasCollision(a, b)) {
+        mergeObjects(a, b)
+      }
+    });
+  });
+
+  stage.children = stage.children.filter(child => !child.toDelete);
+
+  if (followTarget) {
+    stage.regX = followTarget.x;
+    stage.regY = followTarget.y;
+  }
+
+  stage.update(event);
+}
