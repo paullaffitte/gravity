@@ -15,9 +15,29 @@
         position: absolute;
         color: white;
       }
+      div#inputs {
+        position: absolute;
+        top: 0;
+        opacity: 30%;
+        transition: opacity 0.5s;
+        color: white;
+      }
+      div#inputs:hover {
+        opacity: 100%;
+      }
+      input {
+        width: 5em;
+      }
     </style>
   </head>
   <body onload="init()">
     <canvas id="gravity"></canvas>
+    <div id="inputs">
+      <input type="number" name="radius" value="1" min="0.1" />
+      <label for="radius">spawn radius</label>
+      <br>
+      <input type="number" name="simulationSpeed" value="1" min="0.001" step="0.05" />
+      <label for="simulationSpeed">simulations speed</label>
+    </div>
   </body>
 </html>

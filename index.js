@@ -55,9 +55,10 @@ const massBase = 50;
 const initialObjects = 1000;
 const initialDensity = 1;
 const topBiggestToCompute = 500;
-window.simulationSpeed = 1;
+const settings = {};
 
 function init() {
+  initInputs();
   const canvas = document.getElementById("gravity");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -99,12 +100,12 @@ function init() {
     unfollow: () => followTarget = null,
   });
   keyboardControls.mapping = [
-    { control: 'left', keys: [ 'ArrowLeft', 'A' ] },
-    { control: 'right', keys: [ 'ArrowRight', 'D' ] },
-    { control: 'up', keys: [ 'ArrowUp', 'W' ] },
-    { control: 'down', keys: [ 'ArrowDown', 'S' ] },
-    { control: 'zoomIn', keys: [ 'ArrowDown', 'E' ] },
-    { control: 'zoomOut', keys: [ 'ArrowDown', 'Q' ] },
+    { control: 'left', keys: [ 'A' ] },
+    { control: 'right', keys: [ 'D' ] },
+    { control: 'up', keys: [ 'W' ] },
+    { control: 'down', keys: [ 'S' ] },
+    { control: 'zoomIn', keys: [ 'E' ] },
+    { control: 'zoomOut', keys: [ 'Q' ] },
     { control: 'repeat', keys: [ 'R' ], onPress: true },
     { control: 'follow', keys: [ 'F' ], onPress: true },
     { control: 'unfollow', keys: [ 'U' ], onPress: true },
@@ -117,7 +118,7 @@ function init() {
   });
 
   createjs.Ticker.on("tick", e => {
-    const delta = e.delta / 1000 * window.simulationSpeed
+    const delta = e.delta / 1000 * settings.simulationSpeed
     update(e, stage, delta);
     keyboardControls.update(delta);
   });
@@ -139,6 +140,19 @@ function init() {
   }
 }
 
+function initInputs() {
+  document.getElementById("inputs").addEventListener("input", e => {
+    settings[e.target.name] = e.target.value;
+  });
+
+  document.getElementById("inputs").querySelectorAll("input").forEach(input => {
+    input.dispatchEvent(new Event('input', {
+      bubbles: true,
+      cancelable: true,
+    }));
+  });
+}
+
 const sub = (a, b) => a - b;
 const add = (a, b) => a + b;
 const multiply = (a, b) => a * b;
@@ -150,18 +164,16 @@ const onVector = (vec, op) => asVector(op(vec.x), op(vec.y));
 
 function handleCreateObject(stage) {
   let position = null;
-  let force = null;
 
   stage.on("stagemousedown", function(evt) {
     position = { x: evt.stageX, y: evt.stageY };
   });
 
   stage.on("stagemouseup", function(evt) {
-    force = onVector(toVector(position, { x: evt.stageX, y: evt.stageY }), v => v / stage.scale);
+    let force = onVector(toVector(position, { x: evt.stageX, y: evt.stageY }), v => v / stage.scale);
     const realPosition = stage.globalToLocal(position.x, position.y);
-    addObject(stage, 1, realPosition, force);
+    addObject(stage, settings.radius, realPosition, force);
     position = null;
-    force = null;
   });
 }
 
