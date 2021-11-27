@@ -170,6 +170,10 @@ function addObject(stage, radius, position, force) {
 
   setLastObject(radius, force);
 
+  if (followTarget) {
+    force = toVector(force, onVector(followTarget.force, v => v / followTarget.mass), add);
+  }
+
   circle.graphics
     .beginFill("White")
     .drawCircle(0, 0, radius);
