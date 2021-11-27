@@ -170,25 +170,23 @@ function addObject(stage, radius, position, force) {
   stage.addChild(circle);
 }
 
-function updateSpeed(a, b) {
+function updateSpeed(a, b, distanceVector) {
   const gravitationalConstant = 1;
-
-  const distVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));
-  const distance = distVector.norm();
+  const distance = distanceVector.norm();
 
   if (distance == 0)
     return;
 
   const gForce = gravitationalConstant * a.mass * b.mass / Math.pow(distance, 2);
 
-  const direction = onVector(distVector, v => v / distance);
+  const direction = onVector(distanceVector, v => v / distance);
   const force = onVector(direction, v => v * gForce)
   a.force = toVector(a.force, force, add);
   b.force = toVector(b.force, onVector(force, v => -v), add);
 }
 
-function hasCollision(a, b) {
-  const distance = toVector(asVector(a.x, a.y), asVector(b.x, b.y)).norm();
+function hasCollision(a, b, distanceVector) {
+  const distance = distanceVector.norm();
   return distance - (a.radius + b.radius) <= 0;
 }
 
@@ -206,22 +204,27 @@ function mergeObjects(a, b) {
 }
 
 function update(event, stage, delta) {
-  const bigChildren = stage.children.sort((a, b) => b.mass - a.mass).slice(0, 200);
+  const massSortedChildren = stage.children.sort((a, b) => b.mass - a.mass)
 
-  stage.children.forEach((a, i) => {
-    if (a.toDelete)
-      return;
+  for (let i = 0; i < stage.children.length; i++) {
+    const a = stage.children[i];
     a.x += delta * a.force.x / a.mass;
     a.y += delta * a.force.y / a.mass;
-    bigChildren.forEach((b, j) => { // only check the biggest objects
-      if (i <= j || b.toDelete)
-        return;
-      updateSpeed(a, b);
-      if (hasCollision(a, b)) {
+  }
+  // Only apply forces and collisions from biggest objects to all other objects
+  for (let i = 0; i < Math.min(500, massSortedChildren.length); i++) {
+    const a = stage.children[i];
+    for (let j = i + 1; j < stage.children.length; j++) {
+      const b = stage.children[j];
+      if (b.toDelete)
+        continue;
+      const distanceVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));
+      updateSpeed(a, b, distanceVector);
+      if (hasCollision(a, b, distanceVector)) {
         mergeObjects(a, b)
       }
-    });
-  });
+    };
+  };
 
   stage.children = stage.children.filter(child => !child.toDelete);
 
