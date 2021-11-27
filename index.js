@@ -120,8 +120,8 @@ function init() {
   createjs.Ticker.framerate = 60;
   window.simulationSpeed = 1;
 
-  for (let i = 0; i < 50; i++) {
-    addObject(stage, Math.random(), asVector(Math.random() * window.innerWidth, Math.random() * window.innerHeight), asVector(0, 0));
+  for (let i = 0; i < 1000; i++) {
+    addObject(stage, Math.max(0.3, Math.random()) * 2, asVector(Math.random() * window.innerWidth, Math.random() * window.innerHeight), asVector(0, 0));
   }
 }
 
@@ -206,12 +206,14 @@ function mergeObjects(a, b) {
 }
 
 function update(event, stage, delta) {
+  const bigChildren = stage.children.sort((a, b) => b.mass - a.mass).slice(0, 200);
+
   stage.children.forEach((a, i) => {
     if (a.toDelete)
       return;
     a.x += delta * a.force.x / a.mass;
     a.y += delta * a.force.y / a.mass;
-    stage.children.forEach((b, j) => {
+    bigChildren.forEach((b, j) => { // only check the biggest objects
       if (i <= j || b.toDelete)
         return;
       updateSpeed(a, b);
