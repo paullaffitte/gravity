@@ -124,7 +124,7 @@ function init() {
   createjs.Ticker.framerate = 60;
 
   for (let i = 0; i < initialObjects; i++) {
-    const area = initialObjects / initialDensity * 200 * 200; // one object per 1000px^2
+    const area = initialObjects / initialDensity * 200 * 200; // one object per 200px^2
     const maxDistanceFromCenter = Math.sqrt(area / Math.PI);
     const randAngle = Math.random();
     const randDistance = Math.random();
@@ -184,7 +184,7 @@ function addObject(stage, radius, position, force) {
 }
 
 function updateSpeed(a, b, distanceVector) {
-  const distance = distanceVector.norm();
+  const distance = distanceVector._norm;
 
   if (distance == 0)
     return;
@@ -198,7 +198,7 @@ function updateSpeed(a, b, distanceVector) {
 }
 
 function hasCollision(a, b, distanceVector) {
-  const distance = distanceVector.norm();
+  const distance = distanceVector._norm;
   return distance - (a.radius + b.radius) <= 0;
 }
 
@@ -231,6 +231,7 @@ function update(event, stage, delta) {
       if (b.toDelete)
         continue;
       const distanceVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));
+      distanceVector._norm = distanceVector.norm();
       updateSpeed(a, b, distanceVector);
       if (hasCollision(a, b, distanceVector)) {
         mergeObjects(a, b)
