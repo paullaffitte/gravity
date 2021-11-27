@@ -18,9 +18,10 @@
       div#inputs {
         position: absolute;
         top: 0;
-        opacity: 30%;
+        opacity: 20%;
         transition: opacity 0.5s;
         color: white;
+        padding-left: 0.5em;
       }
       div#inputs:hover {
         opacity: 100%;
@@ -28,11 +29,24 @@
       input {
         width: 5em;
       }
+      h4 {
+        margin: 0.5em 0;
+      }
     </style>
   </head>
   <body onload="init()">
     <canvas id="gravity"></canvas>
     <div id="inputs">
+      <h4>Setup</h4>
+      <input type="number" name="initialObjects" value="300" min="0" />
+      <label for="initialObjects">initial objects</label>
+      <br>
+      <input type="number" name="initialDensity" value="1" min="0.001" step="0.1" />
+      <label for="initialDensity">initial density</label>
+      <br>
+      <button id="reset">reset</button>
+      <hr>
+      <h4>Settings</h4>
       <input type="number" name="radius" value="1" min="0.1" />
       <label for="radius">spawn radius</label>
       <br>

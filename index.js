@@ -52,8 +52,6 @@ let lastObject = {};
 const setLastObject = (radius, force) => lastObject = { radius, force };
 let followTarget;
 const massBase = 50;
-const initialObjects = 1000;
-const initialDensity = 1;
 const topBiggestToCompute = 500;
 const settings = {};
 
@@ -64,10 +62,6 @@ function init() {
   canvas.height = window.innerHeight;
 
   const stage = new createjs.Stage("gravity");
-  stage.regX = window.innerWidth / 2;
-  stage.regY = window.innerHeight / 2;
-  stage.x = stage.regX;
-  stage.y = stage.regY;
 
   const speed = delta => 300 * delta / stage.scale;
   const zoom = delta => 1 + 1 * delta;
@@ -117,6 +111,10 @@ function init() {
     keyboardControls.controls.zoomIn(e.deltaY / 1000);
   });
 
+  document.getElementById("reset").addEventListener("click", () => {
+   resetStage(stage);
+  });
+
   createjs.Ticker.on("tick", e => {
     const delta = e.delta / 1000 * settings.simulationSpeed
     update(e, stage, delta);
@@ -124,8 +122,20 @@ function init() {
   });
   createjs.Ticker.framerate = 60;
 
-  for (let i = 0; i < initialObjects; i++) {
-    const area = initialObjects / initialDensity * 200 * 200; // one object per 200px^2
+  resetStage(stage);
+}
+
+function resetStage(stage) {
+  followTarget = null;
+  stage.removeAllChildren();
+  stage.regX = window.innerWidth / 2;
+  stage.regY = window.innerHeight / 2;
+  stage.x = stage.regX;
+  stage.y = stage.regY;
+  stage.scale = 1;
+
+  for (let i = 0; i < settings.initialObjects; i++) {
+    const area = settings.initialObjects / settings.initialDensity * 200 * 200; // one object per 200px^2
     const maxDistanceFromCenter = Math.sqrt(area / Math.PI);
     const randAngle = Math.random();
     const randDistance = Math.random();
