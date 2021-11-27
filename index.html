@@ -1,7 +1,8 @@
 <html>
   <head>
+    <meta charset="utf-8">
     <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
-    <script src="index.js"></script>
+    <script src="index.js" charset="utf-8"></script>
     <style>
       body {
         margin: 0;
@@ -22,6 +23,7 @@
         transition: opacity 0.5s;
         color: white;
         padding-left: 0.5em;
+        overflow: hidden;
       }
       div#inputs:hover {
         opacity: 100%;
@@ -29,14 +31,39 @@
       input {
         width: 5em;
       }
-      h4 {
+      h3, h4 {
         margin: 0.5em 0;
       }
-    </style>
+      ul {
+        margin: 0;
+        padding-left: 1.5em;
+      }
+      #toggle-inputs {
+        cursor: pointer;
+        transition: color 0.3s;
+      }
+      #toggle-inputs:hover {
+        color: red;
+      }
+      #copyright{
+        position: absolute;
+        bottom: 0.5em;
+        right: 1em;
+        color: white;
+      }
+      a {
+        color: #6666ff;
+        text-decoration: none;
+      }
+      a:hover {
+        color: yellow;
+      }
+      </style>
   </head>
   <body onload="init()">
     <canvas id="gravity"></canvas>
     <div id="inputs">
+      <h3>Gravity <span id="toggle-inputs">▲</span></h3>
       <h4>Setup</h4>
       <input type="number" name="initialObjects" value="300" min="0" />
       <label for="initialObjects">initial objects</label>
@@ -52,6 +79,16 @@
       <br>
       <input type="number" name="simulationSpeed" value="1" min="0.001" step="0.05" />
       <label for="simulationSpeed">simulations speed</label>
+      <hr>
+      <h4>Informations</h4>
+      <ul>
+        <li>zoom level: <span id="zoomLevel"></span>%</li>
+        <li>camera speed: <span id="cameraSpeed"></span></li>
+        <li>objects: <span id="objects"></span></li>
+        <li>followed object radius: <span id="followedObjectRadius"></span></li>
+        <li>followed object mass: <span id="followedObjectMass"></span></li>
+      </ul>
     </div>
+    <small id="copyright"><a href="https://plaffitt.com" target="_blank">Paul Laffitte</a> - 2020</small>
   </body>
 </html>

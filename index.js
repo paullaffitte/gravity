@@ -115,10 +115,23 @@ function init() {
    resetStage(stage);
   });
 
+  const informations = {
+    objects: document.getElementById("objects"),
+    zoomLevel: document.getElementById("zoomLevel"),
+    cameraSpeed: document.getElementById("cameraSpeed"),
+    followedObjectRadius: document.getElementById("followedObjectRadius"),
+    followedObjectMass: document.getElementById("followedObjectMass"),
+  };
+
   createjs.Ticker.on("tick", e => {
     const delta = e.delta / 1000 * settings.simulationSpeed
     update(e, stage, delta);
     keyboardControls.update(delta);
+    informations.objects.innerHTML = stage.children.length;
+    informations.zoomLevel.innerHTML = Math.abs(stage.scale * 100);
+    informations.cameraSpeed.innerHTML = followTarget ? followTarget.force.norm() / followTarget.mass : 0;
+    informations.followedObjectRadius.innerHTML = followTarget ? followTarget.radius : 0;
+    informations.followedObjectMass.innerHTML = followTarget ? followTarget.mass : 0;
   });
   createjs.Ticker.framerate = 60;
 
@@ -151,11 +164,23 @@ function resetStage(stage) {
 }
 
 function initInputs() {
-  document.getElementById("inputs").addEventListener("input", e => {
+  const inputs = document.getElementById("inputs");
+  document.getElementById('toggle-inputs').addEventListener('click', e => {
+    if (inputs.style.height) {
+      inputs.style.height = null;
+      e.target.innerHTML = '▲';
+    } else {
+      inputs.style.height = '2em';
+      e.target.innerHTML = '▼';
+    }
+    console.log(e.target, e);
+  });
+
+  inputs.addEventListener('input', e => {
     settings[e.target.name] = e.target.value;
   });
 
-  document.getElementById("inputs").querySelectorAll("input").forEach(input => {
+  inputs.querySelectorAll('input').forEach(input => {
     input.dispatchEvent(new Event('input', {
       bubbles: true,
       cancelable: true,
