@@ -50,8 +50,12 @@ class KeyboardControls {
 
 let lastObject = {};
 const setLastObject = (radius, force) => lastObject = { radius, force };
-
 let followTarget;
+const massBase = 50;
+const initialObjects = 1000;
+const initialDensity = 1;
+const topBiggestToCompute = 500;
+window.simulationSpeed = 1;
 
 function init() {
   const canvas = document.getElementById("gravity");
@@ -118,10 +122,20 @@ function init() {
     keyboardControls.update(delta);
   });
   createjs.Ticker.framerate = 60;
-  window.simulationSpeed = 1;
 
-  for (let i = 0; i < 1000; i++) {
-    addObject(stage, Math.max(0.3, Math.random()) * 2, asVector(Math.random() * window.innerWidth, Math.random() * window.innerHeight), asVector(0, 0));
+  for (let i = 0; i < initialObjects; i++) {
+    const area = initialObjects / initialDensity * 200 * 200; // one object per 1000px^2
+    const maxDistanceFromCenter = Math.sqrt(area / Math.PI);
+    const randAngle = Math.random();
+    const randDistance = Math.random();
+    addObject(stage,
+      Math.max(0.3, Math.random()) * 2,
+      asVector(
+        Math.cos(randAngle * Math.PI * 2) * maxDistanceFromCenter * randDistance + window.innerWidth / 2,
+        Math.sin(randAngle * Math.PI * 2) * maxDistanceFromCenter * randDistance + window.innerHeight / 2
+      ),
+      asVector(0, 0)
+    );
   }
 }
 
@@ -151,7 +165,6 @@ function handleCreateObject(stage) {
   });
 }
 
-const massBase = 50;
 function addObject(stage, radius, position, force) {
   const circle = new createjs.Shape();
 
@@ -171,18 +184,17 @@ function addObject(stage, radius, position, force) {
 }
 
 function updateSpeed(a, b, distanceVector) {
-  const gravitationalConstant = 1;
   const distance = distanceVector.norm();
 
   if (distance == 0)
     return;
 
-  const gForce = gravitationalConstant * a.mass * b.mass / Math.pow(distance, 2);
+  const gForce = a.mass * b.mass / Math.pow(distance, 2);
 
   const direction = onVector(distanceVector, v => v / distance);
   const force = onVector(direction, v => v * gForce)
   a.force = toVector(a.force, force, add);
-  b.force = toVector(b.force, onVector(force, v => -v), add);
+  b.force = toVector(force, b.force, sub);
 }
 
 function hasCollision(a, b, distanceVector) {
@@ -212,7 +224,7 @@ function update(event, stage, delta) {
     a.y += delta * a.force.y / a.mass;
   }
   // Only apply forces and collisions from biggest objects to all other objects
-  for (let i = 0; i < Math.min(500, massSortedChildren.length); i++) {
+  for (let i = 0; i < Math.min(topBiggestToCompute, massSortedChildren.length); i++) {
     const a = stage.children[i];
     for (let j = i + 1; j < stage.children.length; j++) {
       const b = stage.children[j];
