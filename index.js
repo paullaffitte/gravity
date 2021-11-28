@@ -127,7 +127,7 @@ function init() {
     update(e, stage, delta);
     keyboardControls.update(delta);
     informations.objects.innerHTML = stage.children.length;
-    informations.zoomLevel.innerHTML = Math.abs(stage.scale * 100);
+    informations.zoomLevel.innerHTML = Math.abs(stage.scale * 100).toFixed(3);
     informations.cameraSpeed.innerHTML = followTarget ? followTarget.force.norm() / followTarget.mass : 0;
     informations.followedObjectRadius.innerHTML = followTarget ? followTarget.radius : 0;
     informations.followedObjectMass.innerHTML = followTarget ? followTarget.mass : 0;
@@ -157,7 +157,10 @@ function resetStage(stage) {
         Math.cos(randAngle * Math.PI * 2) * maxDistanceFromCenter * randDistance + window.innerWidth / 2,
         Math.sin(randAngle * Math.PI * 2) * maxDistanceFromCenter * randDistance + window.innerHeight / 2
       ),
-      asVector(0, 0)
+      asVector(
+        -Math.sin(randAngle * Math.PI * 2) * settings.initialRadialSpeed * (settings.uniformRadialSpeed ? randDistance : 1),
+        Math.cos(randAngle * Math.PI * 2) * settings.initialRadialSpeed * (settings.uniformRadialSpeed ? randDistance : 1),
+        )
     );
   }
 }
