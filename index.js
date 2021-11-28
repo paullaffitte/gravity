@@ -150,7 +150,7 @@ function resetStage(stage) {
     const area = settings.initialObjects / settings.initialDensity * 200 * 200; // one object per 200px^2
     const maxDistanceFromCenter = Math.sqrt(area / Math.PI);
     const randAngle = Math.random();
-    const randDistance = Math.random();
+    const randDistance = settings.uniformDistribution ? Math.sqrt(Math.random()) : Math.random();
     addObject(stage,
       Math.max(0.3, Math.random()) * 2,
       asVector(
@@ -176,7 +176,11 @@ function initInputs() {
   });
 
   inputs.addEventListener('input', e => {
-    settings[e.target.name] = e.target.value;
+    if (e.target.type == 'checkbox') {
+      settings[e.target.name] = e.target.checked;
+    } else {
+      settings[e.target.name] = e.target.value;
+    }
   });
 
   inputs.querySelectorAll('input').forEach(input => {
