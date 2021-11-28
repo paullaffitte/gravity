@@ -74,31 +74,31 @@
       <h3>Gravity <span id="toggle-inputs">▲</span></h3>
       <h4>Initial setup</h4>
       <input type="number" name="initialObjects" value="300" step="100" min="0" />
-      <label for="initialObjects">objects</label>
+      <label for="initialObjects" title="number of objects to create on reset">objects</label>
       <br>
       <input type="number" name="initialDensity" value="1" min="0.001" />
-      <label for="initialDensity">density</label>
+      <label for="initialDensity" title="density of objects on reset">density</label>
       <br>
       <input type="number" name="initialRadialSpeed" value="0" step="10" />
-      <label for="initialRadialSpeed">radial speed</label>
+      <label for="initialRadialSpeed" title="apply an initial radial speed to objects relative to the center of the screen">radial speed</label>
       <br>
       <input type="checkbox" name="uniformDistribution"/>
-      <label for="uniformDistribution">uniform distribution</label>
+      <label for="uniformDistribution" title="whether to distribute objects uniformly or with more density near the center of the screen">uniform distribution</label>
       <br>
       <input type="checkbox" name="uniformRadialSpeed" checked/>
-      <label for="uniformRadialSpeed">uniform radial speed</label>
+      <label for="uniformRadialSpeed" title="whether to apply the same radial speed to all objects or less speed near the center of the screen">uniform radial speed</label>
       <br>
-      <button id="reset">reset</button>
+      <button id="reset" title="reset all objects and camera">reset</button>
       <hr>
       <h4>Settings</h4>
       <input type="number" name="radius" value="1" min="0.1" />
-      <label for="radius">spawn radius</label>
+      <label for="radius" title="radius of newly spawned objects">spawn radius</label>
       <br>
       <input type="number" name="simulationSpeed" value="1" min="0.001" step="0.05" />
-      <label for="simulationSpeed">simulations speed</label>
+      <label for="simulationSpeed" title="speed of the simulation">simulations speed</label>
       <br>
-      <input type="number" name="resolution" value="300" min="10" step="10" />
-      <label for="resolution">resolution</label>
+      <input type="number" name="resolution" value="1000" min="10" step="10" />
+      <label for="resolution" title="resolution of the simulation">resolution <a target="_blank" href="https://github.com/paullaffitte/gravity#resolution">(?)</a></label>
       <hr>
       <h4>Informations</h4>
       <ul>
