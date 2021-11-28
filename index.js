@@ -51,6 +51,7 @@ class KeyboardControls {
 let lastObject = {};
 const setLastObject = (radius, force) => lastObject = { radius, force };
 let followTarget;
+let closestToMouse;
 let massiveObjectsComputed = 0;
 let iterationsPerStep = 0;
 const massBase = 50;
@@ -74,24 +75,7 @@ function init() {
     zoomIn: delta => stage.scale *= zoom(delta),
     zoomOut: delta => stage.scale *= 1 / zoom(delta),
     repeat: () => addObject(stage, lastObject.radius, stage.globalToLocal(stage.mouseX, stage.mouseY), lastObject.force),
-    follow: () => {
-      const { x, y } = stage.globalToLocal(stage.mouseX, stage.mouseY);
-      const closer = {};
-
-      if (stage.children.length == 0)
-        return;
-
-      stage.children.forEach(child => {
-        const distance = asVector(x - child.x, y - child.y).norm();
-
-        if (!closer.child || distance < closer.distance) {
-          closer.child = child;
-          closer.distance = distance;
-        }
-      });
-
-      followTarget = closer.child;
-    },
+    follow: () => followTarget = closestToMouse.object,
     unfollow: () => followTarget = null,
   });
   keyboardControls.mapping = [
@@ -128,11 +112,11 @@ function init() {
 
   createjs.Ticker.on("tick", e => {
     const delta = e.delta / 1000 * settings.simulationSpeed;
-    const optimalIterationsPerStep = (stage.children.length * (stage.children.length - 1)) / 2;
+    const optimalIterationsPerStep = (stage.objects.length * (stage.objects.length - 1)) / 2;
     update(e, stage, delta);
     keyboardControls.update(delta);
-    informations.objects.innerHTML = stage.children.length;
-    informations.massiveObjectsComputed.innerHTML = massiveObjectsComputed + ' (' + (massiveObjectsComputed / stage.children.length * 100).toFixed(0) + '%)';
+    informations.objects.innerHTML = stage.objects.length;
+    informations.massiveObjectsComputed.innerHTML = massiveObjectsComputed + ' (' + (massiveObjectsComputed / stage.objects.length * 100).toFixed(0) + '%)';
     informations.iterationsPerStep.innerHTML = iterationsPerStep + ' (' + Math.round(iterationsPerStep / optimalIterationsPerStep * 100) + '%)';
     informations.zoomLevel.innerHTML = Math.abs(stage.scale * 100).toFixed(3);
     informations.cameraSpeed.innerHTML = followTarget ? (followTarget.force.norm() / followTarget.mass).toFixed(2) : 0;
@@ -152,6 +136,7 @@ function resetStage(stage) {
   stage.x = stage.regX;
   stage.y = stage.regY;
   stage.scale = 1;
+  stage.objects = [];
 
   for (let i = 0; i < settings.initialObjects; i++) {
     const area = settings.initialObjects / settings.initialDensity * 200 * 200; // one object per 200px^2
@@ -170,6 +155,10 @@ function resetStage(stage) {
         )
     );
   }
+
+  const closestIndicator = new createjs.Shape();
+  stage.addChild(closestIndicator);
+  stage.closestIndicator = closestIndicator;
 }
 
 function initInputs() {
@@ -182,14 +171,13 @@ function initInputs() {
       inputs.style.height = '2em';
       e.target.innerHTML = '▼';
     }
-    console.log(e.target, e);
   });
 
   inputs.addEventListener('input', e => {
     if (e.target.type == 'checkbox') {
       settings[e.target.name] = e.target.checked;
     } else {
-      settings[e.target.name] = e.target.value;
+      settings[e.target.name] = parseFloat(e.target.value);
     }
   });
 
@@ -245,6 +233,7 @@ function addObject(stage, radius, position, force) {
   circle.force = onVector(force, v => v * circle.mass);
 
   stage.addChild(circle);
+  stage.objects.push(circle);
 }
 
 function updateSpeed(a, b, distanceVector) {
@@ -279,23 +268,42 @@ function mergeObjects(a, b) {
     followTarget = a;
 }
 
-function update(event, stage, delta) {
-  const massSortedChildren = stage.children.sort((a, b) => b.mass - a.mass)
+function getClosestToMouse(stage) {
+  const { x, y } = stage.globalToLocal(stage.mouseX, stage.mouseY);
+  const closer = {};
 
-  for (let i = 0; i < stage.children.length; i++) {
-    const a = stage.children[i];
+  if (stage.objects.length == 0)
+    return;
+
+  stage.objects.forEach(object => {
+    const distance = asVector(x - object.x, y - object.y).norm();
+
+    if (!closer.object || distance < closer.distance) {
+      closer.object = object;
+      closer.distance = distance;
+    }
+  });
+
+  return closer;
+}
+
+function update(event, stage, delta) {
+  const massSortedObjects = stage.objects.sort((a, b) => b.mass - a.mass)
+
+  for (let i = 0; i < stage.objects.length; i++) {
+    const a = stage.objects[i];
     a.x += delta * a.force.x / a.mass;
     a.y += delta * a.force.y / a.mass;
   }
 
   // Only apply forces and collisions from biggest objects to all other objects
-  massiveObjectsComputed = Math.pow(settings.resolution, 2) / stage.children.length
-  massiveObjectsComputed = Math.min(Math.ceil(massiveObjectsComputed), stage.children.length);
+  massiveObjectsComputed = Math.pow(settings.resolution, 2) / stage.objects.length
+  massiveObjectsComputed = Math.min(Math.ceil(massiveObjectsComputed), stage.objects.length);
   iterationsPerStep = 0;
   for (let i = 0; i < massiveObjectsComputed; i++) {
-    const a = massSortedChildren[i];
-    for (let j = i + 1; j < stage.children.length; j++) {
-      const b = stage.children[j];
+    const a = massSortedObjects[i];
+    for (let j = i + 1; j < stage.objects.length; j++) {
+      const b = stage.objects[j];
       iterationsPerStep++;
       if (b.toDelete)
         continue;
@@ -308,6 +316,16 @@ function update(event, stage, delta) {
     };
   };
 
+  closestToMouse = getClosestToMouse(stage);
+  stage.closestIndicator.graphics.clear();
+  if (settings.showClosestObject) {
+    stage.closestIndicator.graphics
+      .setStrokeStyle(1 / stage.scale)
+      .beginStroke("White")
+      .drawCircle(closestToMouse.object.x, closestToMouse.object.y, closestToMouse.object.radius + 20 / stage.scale);
+  }
+
+  stage.objects = stage.objects.filter(object => !object.toDelete);
   stage.children = stage.children.filter(child => !child.toDelete);
 
   if (followTarget) {
