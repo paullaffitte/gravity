@@ -52,7 +52,6 @@ let lastObject = {};
 const setLastObject = (radius, force) => lastObject = { radius, force };
 let followTarget;
 const massBase = 50;
-const topBiggestToCompute = 500;
 const settings = {};
 
 function init() {
@@ -274,9 +273,11 @@ function update(event, stage, delta) {
     a.x += delta * a.force.x / a.mass;
     a.y += delta * a.force.y / a.mass;
   }
+
   // Only apply forces and collisions from biggest objects to all other objects
-  for (let i = 0; i < Math.min(topBiggestToCompute, massSortedChildren.length); i++) {
-    const a = stage.children[i];
+  const resolution = Math.pow(settings.resolution, 2) / stage.children.length;
+  for (let i = 0; i < Math.min(Math.floor(resolution), stage.children.length); i++) {
+    const a = massSortedChildren[i];
     for (let j = i + 1; j < stage.children.length; j++) {
       const b = stage.children[j];
       if (b.toDelete)
