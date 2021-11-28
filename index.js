@@ -51,6 +51,8 @@ class KeyboardControls {
 let lastObject = {};
 const setLastObject = (radius, force) => lastObject = { radius, force };
 let followTarget;
+let massiveObjectsComputed = 0;
+let iterationsPerStep = 0;
 const massBase = 50;
 const settings = {};
 
@@ -118,19 +120,24 @@ function init() {
     objects: document.getElementById("objects"),
     zoomLevel: document.getElementById("zoomLevel"),
     cameraSpeed: document.getElementById("cameraSpeed"),
+    massiveObjectsComputed: document.getElementById("massiveObjectsComputed"),
+    iterationsPerStep: document.getElementById("iterationsPerStep"),
     followedObjectRadius: document.getElementById("followedObjectRadius"),
     followedObjectMass: document.getElementById("followedObjectMass"),
   };
 
   createjs.Ticker.on("tick", e => {
-    const delta = e.delta / 1000 * settings.simulationSpeed
+    const delta = e.delta / 1000 * settings.simulationSpeed;
+    const optimalIterationsPerStep = (stage.children.length * (stage.children.length - 1)) / 2;
     update(e, stage, delta);
     keyboardControls.update(delta);
     informations.objects.innerHTML = stage.children.length;
+    informations.massiveObjectsComputed.innerHTML = massiveObjectsComputed + ' (' + (massiveObjectsComputed / stage.children.length * 100).toFixed(0) + '%)';
+    informations.iterationsPerStep.innerHTML = iterationsPerStep + ' (' + Math.round(iterationsPerStep / optimalIterationsPerStep * 100) + '%)';
     informations.zoomLevel.innerHTML = Math.abs(stage.scale * 100).toFixed(3);
-    informations.cameraSpeed.innerHTML = followTarget ? followTarget.force.norm() / followTarget.mass : 0;
-    informations.followedObjectRadius.innerHTML = followTarget ? followTarget.radius : 0;
-    informations.followedObjectMass.innerHTML = followTarget ? followTarget.mass : 0;
+    informations.cameraSpeed.innerHTML = followTarget ? (followTarget.force.norm() / followTarget.mass).toFixed(2) : 0;
+    informations.followedObjectRadius.innerHTML = followTarget ? followTarget.radius.toFixed(2) : '-';
+    informations.followedObjectMass.innerHTML = followTarget ? followTarget.mass.toFixed(2) : '-';
   });
   createjs.Ticker.framerate = 60;
 
@@ -282,11 +289,14 @@ function update(event, stage, delta) {
   }
 
   // Only apply forces and collisions from biggest objects to all other objects
-  const resolution = Math.pow(settings.resolution, 2) / stage.children.length;
-  for (let i = 0; i < Math.min(Math.floor(resolution), stage.children.length); i++) {
+  massiveObjectsComputed = Math.pow(settings.resolution, 2) / stage.children.length
+  massiveObjectsComputed = Math.min(Math.ceil(massiveObjectsComputed), stage.children.length);
+  iterationsPerStep = 0;
+  for (let i = 0; i < massiveObjectsComputed; i++) {
     const a = massSortedChildren[i];
     for (let j = i + 1; j < stage.children.length; j++) {
       const b = stage.children[j];
+      iterationsPerStep++;
       if (b.toDelete)
         continue;
       const distanceVector = toVector(asVector(a.x, a.y), asVector(b.x, b.y));

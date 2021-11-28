@@ -73,7 +73,7 @@
     <div id="inputs" class="opacityHover">
       <h3>Gravity <span id="toggle-inputs">▲</span></h3>
       <h4>Initial setup</h4>
-      <input type="number" name="initialObjects" value="300" min="0" />
+      <input type="number" name="initialObjects" value="300" step="100" min="0" />
       <label for="initialObjects">objects</label>
       <br>
       <input type="number" name="initialDensity" value="1" min="0.001" />
@@ -103,10 +103,12 @@
       <h4>Informations</h4>
       <ul>
         <li>zoom level: <span id="zoomLevel"></span>%</li>
-        <li>camera speed: <span id="cameraSpeed"></span></li>
         <li>objects: <span id="objects"></span></li>
+        <li>massive objects computed: <span id="massiveObjectsComputed"></span></li>
+        <li>iterations per step: <span id="iterationsPerStep"></span></li>
         <li>followed object radius: <span id="followedObjectRadius"></span></li>
         <li>followed object mass: <span id="followedObjectMass"></span></li>
+        <li>camera speed: <span id="cameraSpeed"></span></li>
       </ul>
     </div>
     <small id="copyright" class="opacityHover">
