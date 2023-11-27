@@ -93,7 +93,7 @@ function init() {
   handleCreateObject(stage);
 
   document.addEventListener('wheel', e => {
-    keyboardControls.controls.zoomIn(e.deltaY / 1000);
+    keyboardControls.controls.zoomIn(-e.deltaY / 1000);
   });
 
   document.getElementById("reset").addEventListener("click", () => {
