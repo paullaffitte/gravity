@@ -103,7 +103,7 @@ function init() {
   const informations = {
     objects: document.getElementById("objects"),
     zoomLevel: document.getElementById("zoomLevel"),
-    cameraSpeed: document.getElementById("cameraSpeed"),
+    followedObjectSpeed: document.getElementById("followedObjectSpeed"),
     massiveObjectsComputed: document.getElementById("massiveObjectsComputed"),
     iterationsPerStep: document.getElementById("iterationsPerStep"),
     followedObjectRadius: document.getElementById("followedObjectRadius"),
@@ -119,7 +119,7 @@ function init() {
     informations.massiveObjectsComputed.innerHTML = massiveObjectsComputed + ' (' + (massiveObjectsComputed / stage.objects.length * 100).toFixed(0) + '%)';
     informations.iterationsPerStep.innerHTML = iterationsPerStep + ' (' + Math.round(iterationsPerStep / optimalIterationsPerStep * 100) + '%)';
     informations.zoomLevel.innerHTML = Math.abs(stage.scale * 100).toFixed(3);
-    informations.cameraSpeed.innerHTML = followTarget ? (followTarget.force.norm() / followTarget.mass).toFixed(2) : 0;
+    informations.followedObjectSpeed.innerHTML = followTarget ? (followTarget.force.norm() / followTarget.mass).toFixed(2) : '-';
     informations.followedObjectRadius.innerHTML = followTarget ? followTarget.radius.toFixed(2) : '-';
     informations.followedObjectMass.innerHTML = followTarget ? followTarget.mass.toFixed(2) : '-';
   });
